@@ -1,13 +1,127 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ============================================
+// USER MODEL
+// ============================================
+model User {
+  id    String   @id @default(cuid())
+  email String   @unique
+  password String // hashed with bcrypt
+  name  String
+  role  Role     @default(FARMER) // FARMER or VENDOR
+  phone String?
+  address String?
+  
+  // Relations
+  crops       Crop[]       // Crops listed by this user
+  ordersAsVendor   Order[] @relation("vendorOrders")  // Orders where user is vendor
+  ordersAsCustomer Order[] @relation("customerOrders") // Orders where user is customer
+  reviewsGiven     Review[] @relation("reviewsGiven")  // Reviews written by user
+  reviewsReceived  Review[] @relation("reviewsReceived") // Reviews about user
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  FARMER
+  VENDOR
+}
+
+// ============================================
+// CROP MODEL
+// ============================================
+model Crop {
+  id        String   @id @default(cuid())
+  name      String   // "Tomato", "Wheat", etc.
+  description String?
+  price     Float    // Price per unit
+  unit      String   @default("kg") // "kg", "quintal", "piece"
+  quantity  Int      // Available quantity
+  category  String   // "Vegetable", "Grain", "Fruit"
+  
+  // Who listed this crop
+  vendorId  String
+  vendor    User     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  orders    Order[]   // Orders for this crop
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([vendorId])
+}
+
+// ============================================
+// ORDER MODEL
+// ============================================
+model Order {
+  id          String   @id @default(cuid())
+  status      OrderStatus @default(PENDING) // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  quantity    Int      // Quantity ordered
+  totalPrice  Float    // quantity * price
+  
+  // References
+  cropId      String
+  crop        Crop     @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  
+  vendorId    String   // Who is selling
+  vendor      User     @relation("vendorOrders", fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  customerId  String   // Who is buying
+  customer    User     @relation("customerOrders", fields: [customerId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  review      Review?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([cropId])
+  @@index([vendorId])
+  @@index([customerId])
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+// ============================================
+// REVIEW MODEL
+// ============================================
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5 stars
+  comment   String?
+  
+  // References
+  orderId   String   @unique // One review per order
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  reviewerId String  // Who wrote the review
+  reviewer  User     @relation("reviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  
+  revieweeId String  // Who is being reviewed
+  reviewee  User     @relation("reviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([orderId])
+  @@index([reviewerId])
+  @@index([revieweeId])
 }
