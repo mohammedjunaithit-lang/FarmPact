@@ -5,6 +5,8 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth');
 const cropRoutes = require('./routes/crops');
+const orderRoutes = require('./routes/orders');
+const reviewRoutes = require('./routes/reviews');
 
 // Import middleware
 const { verifyToken } = require('./middleware/auth');
@@ -37,9 +39,15 @@ app.use('/api/auth', authRoutes);
 // Crops routes (LIST and GET single are public)
 app.use('/api/crops', cropRoutes);
 
+// Reviews routes (GET reviews is public, POST requires auth)
+app.use('/api/reviews', reviewRoutes);
+
 // ========================================
 // PROTECTED ROUTES (auth required)
 // ========================================
+
+// Orders routes (all require auth)
+app.use('/api/orders', orderRoutes);
 
 // Example protected endpoint
 app.get('/api/protected-example', verifyToken, (req, res) => {
@@ -85,7 +93,15 @@ app.listen(PORT, () => {
   console.log(`\n🌾 Crops:`);
   console.log(`   List: GET http://localhost:${PORT}/api/crops`);
   console.log(`   Get One: GET http://localhost:${PORT}/api/crops/:id`);
-  console.log(`   Create: POST http://localhost:${PORT}/api/crops (auth required)`);
-  console.log(`   Update: PUT http://localhost:${PORT}/api/crops/:id (auth required)`);
-  console.log(`   Delete: DELETE http://localhost:${PORT}/api/crops/:id (auth required)`);
+  console.log(`   Create: POST http://localhost:${PORT}/api/crops (auth)`);
+  console.log(`   Update: PUT http://localhost:${PORT}/api/crops/:id (auth)`);
+  console.log(`   Delete: DELETE http://localhost:${PORT}/api/crops/:id (auth)`);
+  console.log(`\n📦 Orders:`);
+  console.log(`   Create: POST http://localhost:${PORT}/api/orders (auth)`);
+  console.log(`   List: GET http://localhost:${PORT}/api/orders (auth)`);
+  console.log(`   Get One: GET http://localhost:${PORT}/api/orders/:id (auth)`);
+  console.log(`   Update Status: PUT http://localhost:${PORT}/api/orders/:id (auth)`);
+  console.log(`\n⭐ Reviews:`);
+  console.log(`   Create: POST http://localhost:${PORT}/api/reviews (auth)`);
+  console.log(`   Get User Reviews: GET http://localhost:${PORT}/api/reviews/:userId`);
 });
